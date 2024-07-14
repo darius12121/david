@@ -1,0 +1,1272 @@
+
+   local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local LunarUI = {}
+local currentWindow = nil
+local textBoxValues = {}
+local sliderValues = {}
+local toggleStates = {}
+
+function LunarUI:CreateWindow(title, description)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "LunarUI"
+    screenGui.ResetOnSpawn = false
+    
+    local loadingFrame = Instance.new("Frame")
+    loadingFrame.Size = UDim2.new(1, 0, 1, 0)
+    loadingFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    loadingFrame.BorderSizePixel = 0
+    loadingFrame.Parent = screenGui
+    
+    local loadingText = Instance.new("TextLabel")
+    loadingText.Size = UDim2.new(1, 0, 0, 50)
+    loadingText.Position = UDim2.new(0, 0, 0.4, 0)
+    loadingText.BackgroundTransparency = 1
+    loadingText.Text = "Loading..."
+    loadingText.TextColor3 = Color3.new(1, 1, 1)
+    loadingText.TextSize = 24
+    loadingText.Font = Enum.Font.GothamBold
+    loadingText.Parent = loadingFrame
+    
+    local descriptionText = Instance.new("TextLabel")
+    descriptionText.Size = UDim2.new(1, 0, 0, 30)
+    descriptionText.Position = UDim2.new(0, 0, 0.5, 0)
+    descriptionText.BackgroundTransparency = 1
+    descriptionText.Text = description
+    descriptionText.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    descriptionText.TextSize = 18
+    descriptionText.Font = Enum.Font.Gotham
+    descriptionText.Parent = loadingFrame
+    
+    local loadingBar = Instance.new("Frame")
+    loadingBar.Size = UDim2.new(0, 0, 0, 5)
+    loadingBar.Position = UDim2.new(0.25, 0, 0.6, 0)
+    loadingBar.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+    loadingBar.BorderSizePixel = 0
+    loadingBar.Parent = loadingFrame
+    
+    local player = Players.LocalPlayer
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    
+    -- Loading animation
+    local loadingTween = TweenService:Create(loadingBar, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0.5, 0, 0, 5)})
+    loadingTween:Play()
+    
+    loadingTween.Completed:Wait()
+    wait(0.5)
+    
+    -- Create main window
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 600, 0, 400)
+    frame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = frame
+    
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = frame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 10)
+    titleCorner.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(1, -100, 1, 0)
+    titleText.Position = UDim2.new(0, 10, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = title
+    titleText.TextColor3 = Color3.new(1, 1, 1)
+    titleText.TextSize = 22
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = titleBar
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 40, 0, 40)
+    closeButton.Position = UDim2.new(1, -40, 0, 0)
+    closeButton.BackgroundTransparency = 1
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.new(1, 1, 1)
+    closeButton.TextSize = 20
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Parent = titleBar
+    
+    local minimizeButton = Instance.new("TextButton")
+    minimizeButton.Size = UDim2.new(0, 40, 0, 40)
+    minimizeButton.Position = UDim2.new(1, -80, 0, 0)
+    minimizeButton.BackgroundTransparency = 1
+    minimizeButton.Text = "-"
+    minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+    minimizeButton.TextSize = 30
+    minimizeButton.Font = Enum.Font.GothamBold
+    minimizeButton.Parent = titleBar
+    
+    local expandButton = Instance.new("TextButton")
+    expandButton.Size = UDim2.new(0, 40, 0, 40)
+    expandButton.Position = UDim2.new(1, -80, 0, 0)
+    expandButton.BackgroundTransparency = 1
+    expandButton.Text = "+"
+    expandButton.TextColor3 = Color3.new(1, 1, 1)
+    expandButton.TextSize = 30
+    expandButton.Font = Enum.Font.GothamBold
+    expandButton.Visible = false
+    expandButton.Parent = titleBar
+    
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    local function toggleMinimize()
+        if frame.Size == UDim2.new(0, 600, 0, 400) then
+            frame:TweenSize(UDim2.new(0, 600, 0, 40), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.5, true)
+            minimizeButton.Visible = false
+            expandButton.Visible = true
+        else
+            frame:TweenSize(UDim2.new(0, 600, 0, 400), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.5, true)
+            minimizeButton.Visible = true
+            expandButton.Visible = false
+        end
+    end
+    
+    minimizeButton.MouseButton1Click:Connect(toggleMinimize)
+    expandButton.MouseButton1Click:Connect(toggleMinimize)
+    
+    -- Create tab container
+    local tabContainer = Instance.new("Frame")
+    tabContainer.Name = "TabContainer"
+    tabContainer.Size = UDim2.new(0, 150, 1, -40)
+    tabContainer.Position = UDim2.new(0, 0, 0, 40)
+    tabContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    tabContainer.BorderSizePixel = 0
+    tabContainer.Parent = frame
+    
+    local tabContainerCorner = Instance.new("UICorner")
+    tabContainerCorner.CornerRadius = UDim.new(0, 10)
+    tabContainerCorner.Parent = tabContainer
+    
+    local tabContentContainer = Instance.new("Frame")
+    tabContentContainer.Name = "TabContentContainer"
+    tabContentContainer.Size = UDim2.new(1, -150, 1, -40)
+    tabContentContainer.Position = UDim2.new(0, 150, 0, 40)
+    tabContentContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    tabContentContainer.BorderSizePixel = 0
+    tabContentContainer.Parent = frame
+    
+    local tabContentCorner = Instance.new("UICorner")
+    tabContentCorner.CornerRadius = UDim.new(0, 10)
+    tabContentCorner.Parent = tabContentContainer
+    
+    -- Make the window draggable
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+    
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+    
+    -- Fade out loading screen and fade in main window
+    local loadingFadeOut = TweenService:Create(loadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+    local windowFadeIn = TweenService:Create(frame, TweenInfo.new(0.5), {BackgroundTransparency = 0})
+    
+    frame.BackgroundTransparency = 1
+    loadingFadeOut:Play()
+    windowFadeIn:Play()
+    
+    loadingFadeOut.Completed:Connect(function()
+        loadingFrame:Destroy()
+    end)
+    
+    currentWindow = {
+        ScreenGui = screenGui,
+        Frame = frame,
+        TabContainer = tabContainer,
+        TabContentContainer = tabContentContainer,
+        Tabs = {}
+    }
+    
+    return currentWindow
+end
+
+function LunarUI:CreateTab(tabName)
+    if not currentWindow then
+        error("No window created. Call CreateWindow first.")
+    end
+    
+    local tabButton = Instance.new("TextButton")
+    tabButton.Name = tabName
+    tabButton.Size = UDim2.new(1, 0, 0, 40)
+    tabButton.Position = UDim2.new(0, 0, 0, #currentWindow.Tabs * 40)
+    tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    tabButton.BorderSizePixel = 0
+    tabButton.Text = tabName
+    tabButton.TextColor3 = Color3.new(1, 1, 1)
+    tabButton.TextSize = 16
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.Parent = currentWindow.TabContainer
+    
+    local tabButtonCorner = Instance.new("UICorner")
+    tabButtonCorner.CornerRadius = UDim.new(0, 5)
+    tabButtonCorner.Parent = tabButton
+    
+    local tabContent = Instance.new("ScrollingFrame")
+    tabContent.Name = tabName .. "Content"
+    tabContent.Size = UDim2.new(1, 0, 1, 0)
+    tabContent.BackgroundTransparency = 1
+    tabContent.BorderSizePixel = 0
+    tabContent.ScrollBarThickness = 4
+    tabContent.Visible = false
+    tabContent.Parent = currentWindow.TabContentContainer
+    
+    local tabContentLayout = Instance.new("UIListLayout")
+    tabContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabContentLayout.Padding = UDim.new(0, 5)
+    tabContentLayout.Parent = tabContent
+    
+    local newTab = {
+        Button = tabButton,
+        Content = tabContent
+    }
+    
+    table.insert(currentWindow.Tabs, newTab)
+    
+    local function selectTab(tab)
+        for _, t in ipairs(currentWindow.Tabs) do
+            t.Button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            t.Content.Visible = false
+        end
+        tab.Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        tab.Content.Visible = true
+    end
+    
+    tabButton.MouseButton1Click:Connect(function()
+        selectTab(newTab)
+    end)
+    
+    if #currentWindow.Tabs == 1 then
+        selectTab(newTab)
+    end
+    
+    return newTab
+end
+
+function LunarUI:CreateButton(tabName, buttonText, buttonDescription, buttonCallback)
+    if not currentWindow then
+        error("No window created. Call CreateWindow first.")
+    end
+
+    local tab = nil
+    for _, t in ipairs(currentWindow.Tabs) do
+        if t.Button.Text == tabName then
+            tab = t
+            break
+        end
+    end
+
+    if not tab then
+        error("Tab '" .. tabName .. "' not found.")
+    end
+
+    local button = Instance.new("TextButton")
+    button.Name = buttonText
+    button.Size = UDim2.new(1, -20, 0, 40)
+    button.Position = UDim2.new(0, 10, 0, #tab.Content:GetChildren() * 45)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.BorderSizePixel = 0
+    button.Text = buttonText
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.TextSize = 14
+    button.Font = Enum.Font.Gotham
+    button.Parent = tab.Content
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 5)
+    buttonCorner.Parent = button
+
+    button.MouseButton1Click:Connect(function()
+        buttonCallback()
+    end)
+
+    local descriptionPopup = Instance.new("Frame")
+    descriptionPopup.Name = "DescriptionPopup"
+    descriptionPopup.Size = UDim2.new(0, 200, 0, 100)
+    descriptionPopup.Position = UDim2.new(0.5, -100, 0.5, -50)
+    descriptionPopup.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    descriptionPopup.BorderSizePixel = 0
+    descriptionPopup.Visible = false
+    descriptionPopup.Parent = currentWindow.ScreenGui
+
+    local popupCorner = Instance.new("UICorner")
+    popupCorner.CornerRadius = UDim.new(0, 5)
+    popupCorner.Parent = descriptionPopup
+
+    local descriptionText = Instance.new("TextLabel")
+    descriptionText.Size = UDim2.new(1, -20, 1, -20)
+    descriptionText.Position = UDim2.new(0, 10, 0, 10)
+    descriptionText.BackgroundTransparency = 1
+    descriptionText.Text = buttonDescription
+    descriptionText.TextColor3 = Color3.new(1, 1, 1)
+    descriptionText.TextSize = 14
+    descriptionText.Font = Enum.Font.Gotham
+    descriptionText.TextWrapped = true
+    descriptionText.Parent = descriptionPopup
+
+    button.MouseButton2Click:Connect(function()
+        descriptionPopup.Position = UDim2.new(0, UserInputService:GetMouseLocation().X, 0, UserInputService:GetMouseLocation().Y)
+        descriptionPopup.Visible = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            descriptionPopup.Visible = false
+        end
+    end)
+
+    return button
+end
+
+function LunarUI:CreateSection(tabName, sectionText)
+    if not currentWindow then
+        error("No window created. Call CreateWindow first.")
+    end
+
+    local tab = nil
+    for _, t in ipairs(currentWindow.Tabs) do
+        if t.Button.Text == tabName then
+            tab = t
+            break
+        end
+    end
+
+    if not tab then
+        error("Tab '" .. tabName .. "' not found.")
+    end
+
+    local sectionLabel = Instance.new("TextLabel")
+    sectionLabel.Name = "Section_" .. sectionText
+    sectionLabel.Size = UDim2.new(1, -20, 0, 30)
+    sectionLabel.Position = UDim2.new(0, 10, 0, #tab.Content:GetChildren() * 45)
+    sectionLabel.BackgroundTransparency = 1
+    sectionLabel.Text = sectionText
+    sectionLabel.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+    sectionLabel.TextSize = 16
+    sectionLabel.Font = Enum.Font.GothamBold
+    sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sectionLabel.Parent = tab.Content
+
+    return sectionLabel
+end
+
+function LunarUI:TextBox(tabName, placeholderText)
+    if not currentWindow then
+        error("No window created. Call CreateWindow first.")
+    end
+
+    local tab = nil
+    for _, t in ipairs(currentWindow.Tabs) do
+        if t.Button.Text == tabName then
+            tab = t
+            break
+        end
+    end
+
+    if not tab then
+        error("Tab '" .. tabName .. "' not found.")
+    end
+
+    local textBoxFrame = Instance.new("Frame")
+    textBoxFrame.Name = "TextBoxFrame_" .. placeholderText
+    textBoxFrame.Size = UDim2.new(1, -20, 0, 40)
+    textBoxFrame.Position = UDim2.new(0, 10, 0, #tab.Content:GetChildren() * 45)
+    textBoxFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    textBoxFrame.BorderSizePixel = 0
+    textBoxFrame.Parent = tab.Content
+
+    local textBoxCorner = Instance.new("UICorner")
+    textBoxCorner.CornerRadius = UDim.new(0, 5)
+    textBoxCorner.Parent = textBoxFrame
+
+       local textBox = Instance.new("TextBox")
+    textBox.Name = "TextBox"
+    textBox.Size = UDim2.new(1, -20, 1, -10)
+    textBox.Position = UDim2.new(0, 10, 0, 5)
+    textBox.BackgroundTransparency = 1
+    textBox.Text = ""
+    textBox.PlaceholderText = placeholderText
+    textBox.TextColor3 = Color3.new(1, 1, 1)
+    textBox.PlaceholderColor3 = Color3.new(0.7, 0.7, 0.7)
+    textBox.TextSize = 14
+    textBox.Font = Enum.Font.Gotham
+    textBox.Parent = textBoxFrame
+
+    textBoxValues[placeholderText] = ""
+
+    textBox.FocusLost:Connect(function(enterPressed)
+        textBoxValues[placeholderText] = textBox.Text
+    end)
+
+    return textBox
+end
+
+function LunarUI:GetTextBoxValue(placeholderText)
+    return textBoxValues[placeholderText] or ""
+end
+
+function LunarUI:CreateSlider(tabName, sliderName, sliderMin, sliderMax)
+    if not currentWindow then
+        error("No window created. Call CreateWindow first.")
+    end
+
+    local tab = nil
+    for _, t in ipairs(currentWindow.Tabs) do
+        if t.Button.Text == tabName then
+            tab = t
+            break
+        end
+    end
+
+    if not tab then
+        error("Tab '" .. tabName .. "' not found.")
+    end
+
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Name = "SliderFrame_" .. sliderName
+    sliderFrame.Size = UDim2.new(1, -20, 0, 60)
+    sliderFrame.Position = UDim2.new(0, 10, 0, #tab.Content:GetChildren() * 45)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.Parent = tab.Content
+
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 5)
+    sliderCorner.Parent = sliderFrame
+
+    local sliderTitle = Instance.new("TextLabel")
+    sliderTitle.Name = "Title"
+    sliderTitle.Size = UDim2.new(1, -20, 0, 20)
+    sliderTitle.Position = UDim2.new(0, 10, 0, 5)
+    sliderTitle.BackgroundTransparency = 1
+    sliderTitle.Text = sliderName
+    sliderTitle.TextColor3 = Color3.new(1, 1, 1)
+    sliderTitle.TextSize = 14
+    sliderTitle.Font = Enum.Font.GothamBold
+    sliderTitle.TextXAlignment = Enum.TextXAlignment.Left
+    sliderTitle.Parent = sliderFrame
+
+    local sliderBackground = Instance.new("Frame")
+    sliderBackground.Name = "Background"
+    sliderBackground.Size = UDim2.new(1, -20, 0, 10)
+    sliderBackground.Position = UDim2.new(0, 10, 0, 30)
+    sliderBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    sliderBackground.BorderSizePixel = 0
+    sliderBackground.Parent = sliderFrame
+
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Name = "Fill"
+    sliderFill.Size = UDim2.new(0, 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderBackground
+
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Name = "SliderButton"
+    sliderButton.Size = UDim2.new(0, 20, 0, 20)
+    sliderButton.Position = UDim2.new(0, -10, 0.5, -10)
+    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sliderButton.Text = ""
+    sliderButton.Parent = sliderBackground
+
+    local sliderButtonCorner = Instance.new("UICorner")
+    sliderButtonCorner.CornerRadius = UDim.new(1, 0)
+    sliderButtonCorner.Parent = sliderButton
+
+    local sliderValue = Instance.new("TextLabel")
+    sliderValue.Name = "Value"
+    sliderValue.Size = UDim2.new(1, -20, 0, 20)
+    sliderValue.Position = UDim2.new(0, 10, 0, 40)
+    sliderValue.BackgroundTransparency = 1
+    sliderValue.Text = tostring(sliderMin)
+    sliderValue.TextColor3 = Color3.new(1, 1, 1)
+    sliderValue.TextSize = 14
+    sliderValue.Font = Enum.Font.Gotham
+    sliderValue.TextXAlignment = Enum.TextXAlignment.Left
+    sliderValue.Parent = sliderFrame
+
+    local function updateSlider(input)
+        local pos = math.clamp((input.Position.X - sliderBackground.AbsolutePosition.X) / sliderBackground.AbsoluteSize.X, 0, 1)
+        sliderFill.Size = UDim2.new(pos, 0, 1, 0)
+        sliderButton.Position = UDim2.new(pos, -10, 0.5, -10)
+        local value = math.floor(sliderMin + ((sliderMax - sliderMin) * pos))
+        sliderValue.Text = tostring(value)
+        sliderValues[sliderName] = value
+    end
+
+    local dragging = false
+
+    sliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
+        end
+    end)
+
+    sliderBackground.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            updateSlider(input)
+            dragging = true
+        end
+    end)
+
+    sliderValues[sliderName] = sliderMin
+
+    return sliderFrame
+end
+
+function LunarUI:GetSliderValue(sliderName)
+    return sliderValues[sliderName] or 0
+end
+
+function LunarUI:CreateToggle(tabName, toggleText, setFalseCallback, setTrueCallback, defaultSet)
+    if not currentWindow then
+        error("No window created. Call CreateWindow first.")
+    end
+
+    local tab = nil
+    for _, t in ipairs(currentWindow.Tabs) do
+        if t.Button.Text == tabName then
+            tab = t
+            break
+        end
+    end
+
+    if not tab then
+        error("Tab '" .. tabName .. "' not found.")
+    end
+
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = "ToggleFrame_" .. toggleText
+    toggleFrame.Size = UDim2.new(1, -20, 0, 40)
+    toggleFrame.Position = UDim2.new(0, 10, 0, #tab.Content:GetChildren() * 45)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = tab.Content
+
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 5)
+    toggleCorner.Parent = toggleFrame
+
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(0, 30, 0, 30)
+    toggleButton.Position = UDim2.new(0, 5, 0.5, -15)
+    toggleButton.BackgroundColor3 = defaultSet and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    toggleButton.Text = ""
+    toggleButton.Parent = toggleFrame
+
+    local toggleButtonCorner = Instance.new("UICorner")
+    toggleButtonCorner.CornerRadius = UDim.new(0, 5)
+    toggleButtonCorner.Parent = toggleButton
+
+    local toggleLabel = Instance.new("TextLabel")
+    toggleLabel.Name = "ToggleLabel"
+    toggleLabel.Size = UDim2.new(1, -50, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 45, 0, 0)
+    toggleLabel.BackgroundTransparency = 1
+    toggleLabel.Text = toggleText
+    toggleLabel.TextColor3 = Color3.new(1, 1, 1)
+    toggleLabel.TextSize = 14
+    toggleLabel.Font = Enum.Font.Gotham
+    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    toggleLabel.Parent = toggleFrame
+
+    local isToggled = defaultSet
+
+    local function updateToggle()
+        if isToggled then
+            toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+            setTrueCallback()
+        else
+            toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            setFalseCallback()
+        end
+    end
+
+    toggleButton.MouseButton1Click:Connect(function()
+        isToggled = not isToggled
+        updateToggle()
+    end)
+
+    toggleStates[toggleText] = isToggled
+    updateToggle()
+
+    return toggleFrame
+end
+
+function LunarUI:GetToggleState(toggleText)
+    return toggleStates[toggleText] or false
+end
+
+function LunarUI:Notify(title, content)
+    local notification = Instance.new("Frame")
+    notification.Name = "Notification"
+    notification.Size = UDim2.new(0, 250, 0, 100)
+    notification.Position = UDim2.new(1, 20, 1, 20)
+    notification.AnchorPoint = Vector2.new(1, 1)
+    notification.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    notification.BorderSizePixel = 0
+    notification.Parent = currentWindow.ScreenGui
+
+    local notificationCorner = Instance.new("UICorner")
+    notificationCorner.CornerRadius = UDim.new(0, 10)
+    notificationCorner.Parent = notification
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "Title"
+    titleLabel.Size = UDim2.new(1, -20, 0, 30)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 18
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = notification
+
+    local contentLabel = Instance.new("TextLabel")
+    contentLabel.Name = "Content"
+    contentLabel.Size = UDim2.new(1, -20, 1, -40)
+    contentLabel.Position = UDim2.new(0, 10, 0, 35)
+    contentLabel.BackgroundTransparency = 1
+    contentLabel.Text = content
+    contentLabel.TextColor3 = Color3.new(0.9, 0.9, 0.9)
+    contentLabel.TextSize = 14
+    contentLabel.Font = Enum.Font.Gotham
+    contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+    contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+    contentLabel.TextWrapped = true
+    contentLabel.Parent = notification
+
+    -- Slide in animation
+    local slideInTween = TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -20, 1, -20)})
+    slideInTween:Play()
+
+    -- Wait for 5 seconds
+    task.wait(5)
+
+    -- Slide out animation
+    local slideOutTween = TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -20)})
+    slideOutTween:Play()
+
+    slideOutTween.Completed:Connect(function()
+        notification:Destroy()
+    end)
+end
+
+function LunarUI:Error(title, content)
+    local notification = Instance.new("Frame")
+    notification.Name = "NotificationError"
+    notification.Size = UDim2.new(0, 250, 0, 100)
+    notification.Position = UDim2.new(1, 20, 1, 20)
+    notification.AnchorPoint = Vector2.new(1, 1)
+    notification.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    notification.BackgroundTransparency = 0.4
+    notification.BorderSizePixel = 0
+    notification.Parent = currentWindow.ScreenGui
+
+    local notificationCorner = Instance.new("UICorner")
+    notificationCorner.CornerRadius = UDim.new(0, 10)
+    notificationCorner.Parent = notification
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "Title"
+    titleLabel.Size = UDim2.new(1, -20, 0, 30)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 18
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = notification
+
+    local contentLabel = Instance.new("TextLabel")
+    contentLabel.Name = "Content"
+    contentLabel.Size = UDim2.new(1, -20, 1, -40)
+    contentLabel.Position = UDim2.new(0, 10, 0, 35)
+    contentLabel.BackgroundTransparency = 1
+    contentLabel.Text = content
+    contentLabel.TextColor3 = Color3.new(0.9, 0.9, 0.9)
+    contentLabel.TextSize = 14
+    contentLabel.Font = Enum.Font.Gotham
+    contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+    contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+    contentLabel.TextWrapped = true
+    contentLabel.Parent = notification
+
+    -- Slide in animation
+    local slideInTween = TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -20, 1, -20)})
+    slideInTween:Play()
+
+    -- Wait for 5 seconds
+    task.wait(5)
+
+    -- Slide out animation
+    local slideOutTween = TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -20)})
+    slideOutTween:Play()
+
+    slideOutTween.Completed:Connect(function()
+        notification:Destroy()
+    end)
+end
+
+function LunarUI:Warn(title, content)
+    local notification = Instance.new("Frame")
+    notification.Name = "NotificationWarn"
+    notification.Size = UDim2.new(0, 250, 0, 100)
+    notification.Position = UDim2.new(1, 20, 1, 20)
+    notification.AnchorPoint = Vector2.new(1, 1)
+    notification.BackgroundColor3 = Color3.fromRGB(255,165,0)
+    notification.BackgroundTransparency = 0.4
+    notification.BorderSizePixel = 0
+    notification.Parent = currentWindow.ScreenGui
+
+    local notificationCorner = Instance.new("UICorner")
+    notificationCorner.CornerRadius = UDim.new(0, 10)
+    notificationCorner.Parent = notification
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "Title"
+    titleLabel.Size = UDim2.new(1, -20, 0, 30)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 18
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = notification
+
+    local contentLabel = Instance.new("TextLabel")
+    contentLabel.Name = "Content"
+    contentLabel.Size = UDim2.new(1, -20, 1, -40)
+    contentLabel.Position = UDim2.new(0, 10, 0, 35)
+    contentLabel.BackgroundTransparency = 1
+    contentLabel.Text = content
+    contentLabel.TextColor3 = Color3.new(0.9, 0.9, 0.9)
+    contentLabel.TextSize = 14
+    contentLabel.Font = Enum.Font.Gotham
+    contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+    contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+    contentLabel.TextWrapped = true
+    contentLabel.Parent = notification
+
+    -- Slide in animation
+    local slideInTween = TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -20, 1, -20)})
+    slideInTween:Play()
+
+    -- Wait for 5 seconds
+    task.wait(5)
+
+    -- Slide out animation
+    local slideOutTween = TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -20)})
+    slideOutTween:Play()
+
+    slideOutTween.Completed:Connect(function()
+        notification:Destroy()
+    end)
+end
+
+function LunarUI:Destroy()
+    if currentWindow and currentWindow.ScreenGui then
+        currentWindow.ScreenGui:Destroy()
+        currentWindow = nil
+        textBoxValues = {}
+        sliderValues = {}
+        toggleStates = {}
+    end
+end
+
+-- Make LunarUI available in the global environment
+_G.LunarUI = LunarUI
+
+--ignore this shit
+
+--Here ur ScriptHUB GOES
+
+    
+
+    
+     LunarUI:CreateWindow("DavidSploit Hub V1.0", "Dave HUB (Made with lunar UI)")
+
+    LunarUI:CreateTab("Basic Scripts")
+    LunarUI:TextBox("Basic Scripts", "Walkspeed")
+
+function setYourWalkSpeed() 
+    local sex = LunarUI:GetTextBoxValue("Walkspeed")
+
+    if sex == "" then
+        LunarUI:Error("Invalid input", "Input cannot be nil")
+    else
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(sex)
+    end
+end
+
+LunarUI:CreateButton("Basic Scripts", "Change WalkSpeed", "Change WalkSpeed", setYourWalkSpeed)
+
+    LunarUI:TextBox("Basic Scripts", "JumpPower")
+
+function setYourJumpPower() 
+local gays = LunarUI:GetTextBoxValue("JumpPower")
+
+if gays == "" then
+LunarUI:Error("Invalid input", "Input cannot be nil")
+else
+game.Players.LocalPlayer.Character.Humanoid.JumpPower = tonumber(gays)
+end
+end
+
+LunarUI:CreateButton("Basic Scripts", "Change JumpPower", "Change JumpPower", setYourJumpPower)
+    
+    
+        function Kill()
+game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end
+
+        LunarUI:CreateButton("Basic Scripts", "Force Kill", "", Kill)
+
+        function setYourGravity()
+    local gravity = tonumber(LunarUI:GetTextBoxValue("Gravity"))
+    if gravity then
+        game.Workspace.Gravity = gravity
+    else
+        warn("Invalid gravity value entered")
+    end
+end
+
+    LunarUI:TextBox("Basic Scripts", "Gravity")
+    LunarUI:CreateButton("Basic Scripts", "Change Gravity", "Change Gravity", setYourGravity)
+
+
+
+
+    LunarUI:CreateTab("GUIS")
+
+    
+        function sayHelloWorl()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end
+
+        LunarUI:CreateButton("GUIS", "Infinite Yeld", "", sayHelloWorl)
+
+                function sayHelloWorldy()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/FilteringEnabled/NamelessAdmin/main/Source"))();
+end
+
+        LunarUI:CreateButton("GUIS", "Nameless Admin", "", sayHelloWorldy)
+
+                        function sayHelloWorld3()
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+-- this might be the worst method to make a chat bypasser but fr who cares atlesat it works
+local function initui()
+	local SimpleBypass = Instance.new("ScreenGui")
+	local UI = Instance.new("Frame")
+	local bar = Instance.new("Frame")
+	local UIStroke = Instance.new("UIStroke")
+	local UICorner = Instance.new("UICorner")
+	local messagebox = Instance.new("TextBox")
+	local UIPadding = Instance.new("UIPadding")
+	local send = Instance.new("ImageButton")
+	local UICorner_2 = Instance.new("UICorner")
+	local Frame = Instance.new("Frame")
+	local ImageLabel = Instance.new("ImageLabel")
+	local UICorner_3 = Instance.new("UICorner")
+	local UIStroke_2 = Instance.new("UIStroke")
+	local clear = Instance.new("TextButton")
+	local UIStroke_3 = Instance.new("UIStroke")
+	local UICorner_4 = Instance.new("UICorner")
+	local method = Instance.new("TextButton")
+	local UIStroke_4 = Instance.new("UIStroke")
+	local UICorner_5 = Instance.new("UICorner")
+	local TextLabel = Instance.new("TextLabel")
+
+
+	SimpleBypass.Name = "SimpleBypass"
+	SimpleBypass.Parent = game:GetService("CoreGui")
+	SimpleBypass.ResetOnSpawn = false
+
+	UI.Name = "UI"
+	UI.Parent = SimpleBypass
+	UI.AnchorPoint = Vector2.new(0.5, 0.5)
+	UI.BackgroundColor3 = Color3.fromRGB(15, 15, 16)
+	UI.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	UI.BorderSizePixel = 0
+	UI.Position = UDim2.new(0.5, 0, 0.5, 0)
+	UI.Size = UDim2.new(0, 254, 0, 195)
+
+	bar.Name = "bar"
+	bar.Parent = UI
+	bar.AnchorPoint = Vector2.new(0.5, 0)
+	bar.BackgroundColor3 = Color3.fromRGB(20, 20, 21)
+	bar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	bar.BorderSizePixel = 0
+	bar.Position = UDim2.new(0.5, 0, 1, -50)
+	bar.Size = UDim2.new(0, 235, 0, 40)
+
+	UIStroke.Color = Color3.fromRGB(70, 70, 140)
+	UIStroke.Thickness = 0.6000000238418579
+	UIStroke.Parent = bar
+
+	UICorner.Parent = bar
+
+	messagebox.Name = "messagebox"
+	messagebox.Parent = bar
+	messagebox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	messagebox.BackgroundTransparency = 1.000
+	messagebox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	messagebox.BorderSizePixel = 0
+	messagebox.ClipsDescendants = true
+	messagebox.Position = UDim2.new(0.00443764543, 0, 0, 0)
+	messagebox.Size = UDim2.new(0.803217113, 0, 1, 0)
+	messagebox.ClearTextOnFocus = false
+	messagebox.Font = Enum.Font.GothamMedium
+	messagebox.PlaceholderColor3 = Color3.fromRGB(178, 178, 178)
+	messagebox.PlaceholderText = "Message here"
+	messagebox.Text = ""
+	messagebox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	messagebox.TextSize = 15.000
+	messagebox.TextWrapped = true
+	messagebox.TextXAlignment = Enum.TextXAlignment.Left
+
+	UIPadding.Parent = messagebox
+	UIPadding.PaddingBottom = UDim.new(0, 6)
+	UIPadding.PaddingLeft = UDim.new(0, 10)
+	UIPadding.PaddingTop = UDim.new(0, 6)
+
+	send.Name = "send"
+	send.Parent = bar
+	send.BackgroundColor3 = Color3.fromRGB(19, 19, 20)
+	send.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	send.BorderSizePixel = 0
+	send.Position = UDim2.new(1, -44, 0, 0)
+	send.Size = UDim2.new(0, 44, 0, 39)
+	send.AutoButtonColor = false
+
+	UICorner_2.Parent = send
+
+	Frame.Parent = send
+	Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 21)
+	Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Frame.BorderSizePixel = 0
+	Frame.Size = UDim2.new(0, 4, 1, 0)
+
+	ImageLabel.Parent = send
+	ImageLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	ImageLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ImageLabel.BackgroundTransparency = 1.000
+	ImageLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	ImageLabel.BorderSizePixel = 0
+	ImageLabel.Position = UDim2.new(0.5, 2, 0.5, 0)
+	ImageLabel.Size = UDim2.new(0, 20, 0, 20)
+	ImageLabel.Image = "rbxassetid://18150985605"
+	ImageLabel.ImageColor3 = Color3.fromRGB(130, 130, 130)
+
+	UICorner_3.Parent = UI
+
+	UIStroke_2.Color = Color3.fromRGB(70, 70, 140)
+	UIStroke_2.Thickness = 0.6000000238418579
+	UIStroke_2.Parent = UI
+
+	clear.Name = "clear"
+	clear.Parent = UI
+	clear.AnchorPoint = Vector2.new(0.5, 0)
+	clear.BackgroundColor3 = Color3.fromRGB(20, 20, 21)
+	clear.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	clear.BorderSizePixel = 0
+	clear.Position = UDim2.new(0.5, 0, 1, -100)
+	clear.Size = UDim2.new(0, 235, 0, 40)
+	clear.AutoButtonColor = false
+	clear.Font = Enum.Font.GothamMedium
+	clear.Text = "Clear logs"
+	clear.TextColor3 = Color3.fromRGB(178, 178, 178)
+	clear.TextSize = 15.000
+
+	UIStroke_3.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	UIStroke_3.Color = Color3.fromRGB(70, 70, 140)
+	UIStroke_3.Thickness = 0.6000000238418579
+	UIStroke_3.Parent = clear
+
+	UICorner_4.Parent = clear
+
+	method.Name = "method"
+	method.Parent = UI
+	method.AnchorPoint = Vector2.new(0.5, 0)
+	method.BackgroundColor3 = Color3.fromRGB(20, 20, 21)
+	method.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	method.BorderSizePixel = 0
+	method.Position = UDim2.new(0.5, 0, 1, -150)
+	method.Size = UDim2.new(0, 235, 0, 40)
+	method.AutoButtonColor = false
+	method.Font = Enum.Font.GothamMedium
+	method.Text = "[Method]: Letters"
+	method.TextColor3 = Color3.fromRGB(178, 178, 178)
+	method.TextSize = 15.000
+
+	UIStroke_4.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	UIStroke_4.Color = Color3.fromRGB(70, 70, 140)
+	UIStroke_4.Thickness = 0.6000000238418579
+	UIStroke_4.Parent = method
+
+	UICorner_5.Parent = method
+
+	TextLabel.Parent = UI
+	TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel.BackgroundTransparency = 1.000
+	TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	TextLabel.BorderSizePixel = 0
+	TextLabel.Size = UDim2.new(1, 0, -0.025641026, 50)
+	TextLabel.Font = Enum.Font.Unknown
+	TextLabel.Text = "SimpleBypass"
+	TextLabel.TextColor3 = Color3.fromRGB(70, 70, 140)
+	TextLabel.TextSize = 17.000
+	return SimpleBypass
+end
+
+spawn(function()
+	local ui = initui().UI
+	
+	pcall(function() --_anim
+		local ts = game:GetService("TweenService")
+		local i = TweenInfo.new(0.1, Enum.EasingStyle.Linear)
+
+		local clear = ui.clear
+		local method = ui.method
+		local send = ui.bar.send
+
+		clear.MouseEnter:Connect(function()
+			ts:Create(clear,i,{BackgroundColor3=Color3.fromRGB(70, 70, 140)}):Play()
+			ts:Create(clear,i,{TextColor3=Color3.fromRGB(255, 255, 255)}):Play()
+		end)
+		clear.MouseLeave:Connect(function()
+			ts:Create(clear,i,{BackgroundColor3=Color3.fromRGB(20, 20, 21)}):Play()
+			ts:Create(clear,i,{TextColor3=Color3.fromRGB(178, 178, 178)}):Play()
+		end)
+
+		method.MouseEnter:Connect(function()
+			ts:Create(method,i,{BackgroundColor3=Color3.fromRGB(70, 70, 140)}):Play()
+			ts:Create(method,i,{TextColor3=Color3.fromRGB(255, 255, 255)}):Play()
+		end)
+		method.MouseLeave:Connect(function()
+			ts:Create(method,i,{BackgroundColor3=Color3.fromRGB(20, 20, 21)}):Play()
+			ts:Create(method,i,{TextColor3=Color3.fromRGB(178, 178, 178)}):Play()
+		end)
+
+		send.MouseEnter:Connect(function()
+			ts:Create(send,i,{BackgroundColor3=Color3.fromRGB(70, 70, 140)}):Play()
+			ts:Create(send.ImageLabel,i,{ImageColor3=Color3.fromRGB(255, 255, 255)}):Play()
+		end)
+		send.MouseLeave:Connect(function()
+			ts:Create(send,i,{BackgroundColor3=Color3.fromRGB(20, 20, 21)}):Play()
+			ts:Create(send.ImageLabel,i,{ImageColor3=Color3.fromRGB(130, 130, 130)}):Play()
+		end)
+	end)
+	
+	pcall(function() -- drag
+		local UserInputService = game:GetService("UserInputService")
+
+		local gui = ui
+
+		local dragging
+		local dragInput
+		local dragStart
+		local startPos
+
+		local function update(input)
+			local delta = input.Position - dragStart
+			gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+
+		gui.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				dragStart = input.Position
+				startPos = gui.Position
+
+				input.Changed:Connect(function()
+					if input.UserInputState == Enum.UserInputState.End then
+						dragging = false
+					end
+				end)
+			end
+		end)
+
+		gui.InputChanged:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+				dragInput = input
+			end
+		end)
+
+		UserInputService.InputChanged:Connect(function(input)
+			if input == dragInput and dragging then
+				update(input)
+			end
+		end)
+	end)
+	
+	pcall(function() -- main
+		local tcs = game:GetService("TextChatService")
+		local chat = tcs.ChatInputBarConfiguration.TargetTextChannel
+
+		local method = "letters"
+		
+		local newline = [[꙰                                                                                  ꙰]]
+
+		function replace(str, find_str, replace_str)
+			local escaped_find_str = find_str:gsub("[%-%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+			return str:gsub(escaped_find_str, replace_str)
+		end
+
+		local letter_replacements = {
+			["\n"] = newline,
+			["f"] = "ƒ",
+			["u"] = "Џ", -- using "Џ" from the last `replace` in your function
+			["y"] = "У",
+			["g"] = "ǥ",
+			["a"] = "ą",
+			["s"] = "Š",
+			["n"] = "Ṉ",
+			["i"] = "İ",
+			["p"] = "Ρ",
+			["o"] = "Ο",
+			["r"] = "ṛ",
+			["d"] = "ď",
+			["k"] = "Ķ", -- or "ĸ"
+			["e"] = "ē",
+			["m"] = "Μ"
+		}
+
+		local function letters_filter(message)
+			message = tostring(message):lower()
+			for search, replacement in pairs(letter_replacements) do
+				message = replace(message, search, replacement)
+			end
+			return message
+		end
+
+		local word_replacements = {
+			["fuck"] = "ƒцcĶ",
+			["nigger"] = "Ṉİǥǥēṛ",
+			["nigga"] = "Ṉİǥǥą",
+			["niggers"] = "Ṉİǥǥēṛs",
+			["niggas"] = "Ṉİǥǥąs",
+			["shit"] = "ŠḣİŦ",
+			["bitch"] = "ΒİŦcḣ",
+			["asshole"] = "ąŠŠḣΟŁē",
+			["cunt"] = "cцṈŦ",
+			["dick"] = "ďİcĶ",
+			["faggot"] = "ƒąǥǥΟŦ",
+			["motherfucker"] = "ΜΟŦḣēṛƒцcĶēṛ",
+			["whore"] = "ẃḣΟṛē",
+			["bastard"] = "ΒąŠŦąṛď",
+			["slut"] = "ŠŁцŦ",
+			["pussy"] = "ΡцŠŠУ"
+		}
+
+		local function words_filter(message)
+			message = tostring(message):lower()
+			message = replace(message, "\n", newline)
+			for search, replacement in pairs(word_replacements) do
+				message = replace(message, search, replacement)
+			end
+			return message
+		end
+
+		local function clearlogs()
+			for i = 1,20 do
+				chat:SendAsync("")
+			end
+		end
+
+		ui.method.MouseButton1Click:Connect(function()
+			if method == "letters" then
+				ui.method.Text = "[method]: Words"
+				method = "words"
+			else
+				ui.method.Text = "[method]: Letters"
+				method = "letters"
+			end
+		end)
+		ui.clear.MouseButton1Click:Connect(function()
+			clearlogs()
+		end)
+		ui.bar.messagebox.FocusLost:Connect(function(enterPressed, _inputObject)
+			if enterPressed then
+				if method == "letters" then
+					chat:SendAsync(letters_filter(ui.bar.messagebox.Text))
+				elseif method == "words" then
+					chat:SendAsync(words_filter(ui.bar.messagebox.Text))
+				end
+				ui.bar.messagebox.Text = ""
+			end
+		end)
+		ui.bar.send.MouseButton1Click:Connect(function()
+			if method == "letters" then
+				chat:SendAsync(letters_filter(ui.bar.messagebox.Text))
+			elseif method == "words" then
+				chat:SendAsync(words_filter(ui.bar.messagebox.Text))
+			end
+			ui.bar.messagebox.Text = ""
+		end)
+	end)
+end)
+end
+
+        LunarUI:CreateButton("GUIS", "Swearing Bypasser (Not 100% SAFE)", "", sayHelloWorld3)
+     
